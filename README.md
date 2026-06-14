@@ -35,7 +35,7 @@ Service Worker を使うので HTTPS が必要です。
 
 **GitHub Pages**（同期なし）
 
-Settings → Pages で `main` ブランチのルートを公開するだけです。
+`.github/workflows/deploy.yml` で main に push するたびに公開されます。Settings → Pages の Source を「GitHub Actions」にしておけば OK です。
 
 iOS では Safari で開いて「ホーム画面に追加」してください。他のブラウザから追加するとオフライン保存がうまく動きません。
 
@@ -53,3 +53,4 @@ python3 -m http.server 8765
 - カナ読み（[js/hangul.js](js/hangul.js)）は連音や ㄱ/ㄷ/ㅂ/ㅈ の有声化など主な規則だけの近似
 - 単語帳を作り直すときは `data/decks/_gen/` を編集して `node tools/assemble-decks.mjs`
 - 更新を出すときは `sw.js` の `CACHE` を上げる
+- `smoke-test.html` と `tools/` は開発用（smoke test は localhost でしか動かない）

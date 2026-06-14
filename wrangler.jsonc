@@ -1,0 +1,20 @@
+{
+  // deployed with `npx wrangler deploy` (Cloudflare Git integration)
+  // _worker.js serves the app (ASSETS) and /api/sync (SYNC_KV)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "korean-word",
+  "compatibility_date": "2026-06-14",
+  "main": "_worker.js",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+
+  // for sync: npx wrangler kv namespace create SYNC_KV, then put the id here
+  // ,"kv_namespaces": [
+  //   { "binding": "SYNC_KV", "id": "PASTE_NAMESPACE_ID_HERE" }
+  // ]
+}

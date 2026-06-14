@@ -1,0 +1,9 @@
+# not served as static assets
+_worker.js
+.assetsignore
+wrangler.jsonc
+node_modules
+tools
+smoke-test.html
+EVIDENCE.md
+.github

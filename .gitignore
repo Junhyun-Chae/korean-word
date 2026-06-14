@@ -5,6 +5,8 @@ Thumbs.db
 
 # tooling
 node_modules/
+.wrangler/
+.dev.vars
 
 # test output
 /tmp/

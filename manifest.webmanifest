@@ -1,0 +1,17 @@
+{
+  "name": "刻印 · Kokuin",
+  "short_name": "刻印",
+  "description": "韓国語の単語を脳に刻む — 分散反復(FSRS) + 能動想起 + 手書き。日本語で学ぶ韓国語。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1018",
+  "theme_color": "#0b1018",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

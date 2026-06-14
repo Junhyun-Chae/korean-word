@@ -1,0 +1,209 @@
+<!doctype html>
+<!-- e2e smoke test, localhost only. Results go to #test-log. -->
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMOKE-RUNNING</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="app"></main>
+  <nav id="tabbar"></nav>
+  <div id="test-log" style="position:fixed;top:0;right:0;max-width:50%;background:#fff;color:#000;font:11px/1.4 monospace;z-index:999;padding:6px;white-space:pre-wrap"></div>
+  <script type="module" src="./js/app.js"></script>
+  <script type="module">
+    const log = [];
+    const logEl = document.getElementById('test-log');
+    window.addEventListener('error', (e) => { log.push(`JSERROR ${e.message} @ ${e.filename}:${e.lineno}`); });
+    window.addEventListener('unhandledrejection', (e) => { log.push(`REJECTION ${e.reason}`); });
+    function report(name, ok, extra = '') {
+      log.push(`${ok ? 'PASS' : 'FAIL'} ${name}${extra ? ' — ' + extra : ''}`);
+      logEl.textContent = log.join('\n');
+      document.title = log.some((l) => l.startsWith('FAIL')) ? 'SMOKE-FAIL' : 'SMOKE-OK';
+    }
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    async function until(fn, ms = 10000) {
+      const t0 = performance.now();
+      while (performance.now() - t0 < ms) {
+        try { const v = fn(); if (v) return v; } catch { /* retry */ }
+        await sleep(50);
+      }
+      throw new Error('timeout: ' + fn.toString().slice(0, 80));
+    }
+    const $ = (s) => document.querySelector(s);
+    const click = (s) => { const e = typeof s === 'string' ? $(s) : s; if (!e) throw new Error('no el ' + s); e.click(); };
+    // check #app only (body would include this script's own text)
+    const bodyHas = (t) => document.getElementById('app').textContent.includes(t);
+
+    // writes to the real IndexedDB, so only run it on localhost
+    const DEV_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', ''];
+    if (!DEV_HOSTS.includes(location.hostname)) {
+      document.title = 'SMOKE-SKIP';
+      logEl.textContent = 'smoke-test.html is a development tool and is disabled off localhost.';
+    } else (async () => {
+      try {
+        // 1. home renders on a fresh DB
+        await until(() => $('#start'));
+        report('home renders', true);
+
+        // 2. deck library: open list, open "topik1", add first 50
+        click('#tabbar [data-nav="add"]');
+        await until(() => $('.seg-btn[data-mode="lib"]'));
+        click('.seg-btn[data-mode="lib"]');
+        await until(() => $('.lib-list li'));
+        report('lib index loads', document.querySelectorAll('.lib-list li').length >= 5,
+          `decks=${document.querySelectorAll('.lib-list li').length}`);
+        click('.lib-list li[data-id="topik1"]');
+        await until(() => $('#lib-add-50'));
+        click('#lib-add-50');
+        await until(() => $('.lib-preview li.have'));
+        report('lib add 50 + refresh marks', document.querySelectorAll('.lib-preview li.have').length === 50,
+          `have=${document.querySelectorAll('.lib-preview li.have').length}`);
+
+        // 3. home shows 50 total words
+        click('#tabbar [data-nav="home"]');
+        await until(() => $('.hero-stats'));
+        const total = $('.hero-stats div:nth-child(3) b').textContent;
+        report('bulk import persisted', total === '50', `total=${total}`);
+
+        // 4. cram: all words, recall only, answer everything correct
+        await until(() => $('#cram-open'));
+        click('#cram-open');
+        await until(() => $('#cram-start'));
+        $('#cram-scope').value = 'all';
+        $('#cram-dir').value = 'recall';
+        click('#cram-start');
+        for (let i = 0; i < 50; i++) {
+          await until(() => $('#reveal'));
+          click('#reveal');
+          await until(() => $('.grade-row.cram .grade.good'));
+          click($('.grade-row.cram .grade.good'));
+        }
+        await until(() => bodyHas('復習モード完了'));
+        report('cram 50/50 all-correct', bodyHas('一発正解 50枚') && bodyHas('全部正解しました'));
+        click('#done-home');
+
+        // 5. cram wrong-requeue: mark one wrong, finish, expect missed list of 1
+        await until(() => $('#cram-open'));
+        click('#cram-open');
+        await until(() => $('#cram-start'));
+        $('#cram-scope').value = 'today';
+        $('#cram-dir').value = 'recall';
+        click('#cram-start');
+        await until(() => $('#reveal')); click('#reveal');
+        await until(() => $('.grade-row.cram .grade.again'));
+        click($('.grade-row.cram .grade.again'));
+        for (let i = 0; i < 60 && !bodyHas('復習モード完了'); i++) {
+          await until(() => $('#reveal') || bodyHas('復習モード完了'));
+          if (bodyHas('復習モード完了')) break;
+          click('#reveal');
+          await until(() => $('.grade-row.cram .grade.good'));
+          click($('.grade-row.cram .grade.good'));
+        }
+        report('cram wrong-requeue finishes', bodyHas('復習モード完了') && bodyHas('間違えた単語 1個'));
+        click('#done-home');
+
+        // 6. FSRS untouched by cram: daily queue = 15 new words × 2 cards
+        await until(() => $('#start'));
+        const startTxt = $('#start').textContent.trim();
+        report('daily queue intact after cram', /復習開始 \(30枚\)/.test(startTxt), startTxt);
+
+        // 7. real review still works and persists one grade
+        click('#start');
+        await until(() => $('#reveal')); click('#reveal');
+        await until(() => $('.grade-row .grade.good:not(:disabled)'));
+        click($('.grade-row .grade.good'));
+        await until(() => $('#rev-exit'));
+        click('#rev-exit');
+        await until(() => $('.hero-stats'));
+        report('daily review grade persists', bodyHas('復習 1枚'));
+
+        // 8. produce card (handwriting) renders pad + reveal shows answer & katakana reading
+        await until(() => $('#cram-open'));
+        click('#cram-open');
+        await until(() => $('#cram-start'));
+        $('#cram-scope').value = 'all';
+        $('#cram-dir').value = 'produce';
+        click('#cram-start');
+        await until(() => $('#pad') || $('#check'));
+        report('produce attempt renders handwriting pad', !!$('#pad') && bodyHas('韓国語で書く'),
+          `pad=${!!$('#pad')}`);
+        click('#check'); // empty pad → wrong → reveal
+        await until(() => $('.answer.big-term'));
+        const hasReading = !!$('.review .ipa') && /[ァ-ヶー]/.test($('.review .ipa').textContent);
+        report('produce reveal shows answer + katakana', !!$('.answer.big-term') && hasReading,
+          `reading=${$('.review .ipa') ? $('.review .ipa').textContent : 'none'}`);
+        click('#rev-exit');
+        await until(() => $('.hero-stats'));
+        report('back to home after produce', !!$('#start'));
+
+        // 9. practice setup lists all 3 drills
+        await until(() => $('#practice-open')); click('#practice-open');
+        await until(() => $('#p-drill'));
+        report('practice setup', $('#p-drill').options.length === 3);
+
+        // 10. shadow drill runs to completion (no grading)
+        $('#p-drill').value = 'shadow'; $('#p-scope').value = 'all';
+        click('#p-start');
+        for (let i = 0; i < 120 && !bodyHas('練習完了'); i++) {
+          await until(() => $('#p-next') || bodyHas('練習完了'));
+          if (bodyHas('練習完了')) break;
+          click('#p-next');
+        }
+        report('shadow drill finishes', bodyHas('練習完了') && bodyHas('繰り返しました'));
+        click('#done-home');
+
+        // 11. dictation drill: answer-unknown path → all wrong, missed list + 0 correct
+        await until(() => $('#practice-open')); click('#practice-open');
+        await until(() => $('#p-drill'));
+        $('#p-drill').value = 'dictation'; $('#p-scope').value = 'all';
+        click('#p-start');
+        for (let i = 0; i < 200 && !bodyHas('練習完了'); i++) {
+          await until(() => $('#p-dont') || bodyHas('練習完了'));
+          if (bodyHas('練習完了')) break;
+          click('#p-dont');
+          await until(() => $('#p-next')); click('#p-next');
+        }
+        report('dictation drill finishes', bodyHas('練習完了') && bodyHas('正解 0個') && bodyHas('間違えた単語'));
+        click('#done-home');
+
+        // 12. speak drill: exiting while the mic is pending must not crash
+        await until(() => $('#practice-open')); click('#practice-open');
+        await until(() => $('#p-drill'));
+        $('#p-drill').value = 'speak'; $('#p-scope').value = 'all';
+        click('#p-start');
+        await until(() => $('#p-mic') || $('#p-reveal'));
+        if ($('#p-mic')) { click('#p-mic'); }              // start (or attempt) recognition
+        await until(() => $('#rev-exit')); click('#rev-exit'); // exit while it may be pending
+        await until(() => $('#start'));
+        await sleep(300); // give any late/aborted mic promise time to settle
+        report('speak mic+exit no crash', !log.some((l) => l.startsWith('JSERROR') || l.startsWith('REJECTION')));
+
+        // re-enter and complete via reveal + self-grade
+        await until(() => $('#practice-open')); click('#practice-open');
+        await until(() => $('#p-drill'));
+        $('#p-drill').value = 'speak'; $('#p-scope').value = 'all';
+        click('#p-start');
+        for (let i = 0; i < 200 && !bodyHas('練習完了'); i++) {
+          await until(() => $('#p-reveal') || bodyHas('練習完了'));
+          if (bodyHas('練習完了')) break;
+          click('#p-reveal');
+          await until(() => $('#p-yes')); click('#p-yes');
+        }
+        report('speak drill finishes', bodyHas('練習完了') && bodyHas('正解'), $('#p-mic') ? 'mic-available' : 'no-mic');
+        click('#done-home');
+
+        // 13. FSRS still intact after all practice (no DB writes)
+        await until(() => $('#start'));
+        report('practice left FSRS untouched', /復習開始 \(\d+枚\)/.test($('#start').textContent));
+      } catch (e) {
+        report('EXCEPTION', false, String(e && e.stack || e).slice(0, 300));
+      }
+      log.push('SMOKE-DONE');
+      logEl.textContent = log.join('\n');
+      try { await fetch('/smoke-report', { method: 'POST', body: log.join('\n') }); } catch { /* file:// runs */ }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# OS / editor junk
+.DS_Store
+*.log
+Thumbs.db
+
+# tooling
+node_modules/
+
+# test output
+/tmp/

@@ -1,5 +1,5 @@
 // bump CACHE when deploying
-const CACHE = 'kokuin-v3';
+const CACHE = 'kokuin-v4';
 const SHELL = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './js/app.js', './js/db.js', './js/dict.js', './js/tts.js', './js/fsrs.js', './js/handwriting.js',

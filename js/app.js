@@ -1561,6 +1561,8 @@ function setView(v) {
 // ---------- init ----------
 async function init() {
   await db.openDB();
+  // ask the browser not to evict our IndexedDB data
+  try { navigator.storage?.persist?.(); } catch { /* unsupported */ }
   await loadSettings();
   applyTheme();
   try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch { /* old Safari */ }

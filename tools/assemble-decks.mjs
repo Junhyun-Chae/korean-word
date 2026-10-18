@@ -32,8 +32,8 @@ for (const d of DECKS) {
   for (const f of mine) {
     let arr;
     try { arr = JSON.parse(readFileSync(join(GEN, f), 'utf8')); }
-    catch (e) { console.error(`✗ ${f}: JSON parse failed — ${e.message}`); continue; }
-    if (!Array.isArray(arr)) { console.error(`✗ ${f}: not an array`); continue; }
+    catch (e) { console.error(`${f}: bad JSON (${e.message})`); continue; }
+    if (!Array.isArray(arr)) { console.error(`${f}: not an array`); continue; }
     for (const w of arr) {
       const t = String(w?.t || '').trim();
       const p = String(w?.p || '').trim();
@@ -51,11 +51,11 @@ for (const d of DECKS) {
   }
   totalBad += bad;
   // fail instead of writing a partial set (sw.js precaches every deck)
-  if (!words.length) { console.error(`✗ FATAL deck ${d.id}: 0 words`); process.exit(1); }
+  if (!words.length) { console.error(`deck ${d.id} has no words, stopping`); process.exit(1); }
   const deck = { id: d.id, name: d.name, desc: d.desc, level: d.level, count: words.length, words };
   writeFileSync(join(OUT, `${d.id}.json`), JSON.stringify(deck));
   index.push({ id: d.id, name: d.name, desc: d.desc, level: d.level, count: words.length });
-  console.log(`✓ ${d.id}: files=${mine.length} words=${words.length} dropped=${bad} dupes=${dupes} exDropped=${exDropped}`);
+  console.log(`${d.id}: files=${mine.length} words=${words.length} dropped=${bad} dupes=${dupes} exDropped=${exDropped}`);
 }
 
 writeFileSync(join(OUT, 'index.json'), JSON.stringify(index));

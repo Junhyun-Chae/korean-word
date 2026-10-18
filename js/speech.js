@@ -4,9 +4,9 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 export const recognitionAvailable = !!SR;
 
 // Returns { promise, cancel }.
-//   promise → array of alternative transcripts (best-effort, ranked), or rejects with
-//             Error(code): unsupported | timeout | no-speech | aborted | <browser error>.
-//   cancel() → abort an in-flight recognition; the promise rejects with 'aborted'.
+//   promise: resolves to the alternative transcripts, best first, or rejects with
+//            Error(code): unsupported | timeout | no-speech | aborted | <browser error>.
+//   cancel(): stops listening; the promise then rejects with 'aborted'.
 // On iOS it can hang until the timeout, so callers should check they're still on the screen.
 export function listen(lang = 'ko-KR', { timeoutMs = 8000 } = {}) {
   let rec = null, done = false, t = null, settle = null;

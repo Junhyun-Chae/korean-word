@@ -82,7 +82,7 @@ export function mergeStreak(sa = {}, sb = {}) {
   let s;
   if ((sb.last || 0) > (sa.last || 0)) s = { ...sb };
   else if ((sa.last || 0) > (sb.last || 0)) s = { ...sa };
-  else s = (sb.current || 0) > (sa.current || 0) ? { ...sb } : { ...sa }; // tie → longer chain
+  else s = (sb.current || 0) > (sa.current || 0) ? { ...sb } : { ...sa }; // tie: keep the longer chain
   s.longest = Math.max(sa.longest || 0, sb.longest || 0, s.current || 0);
   return s;
 }

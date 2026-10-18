@@ -4,7 +4,7 @@
 
 const SBASE = 0xac00, SLAST = 0xd7a3;
 
-// medial vowel index (0..20) → vowel sound key
+// medial vowel index (0..20) -> vowel sound key
 const VOWEL = [
   'a',  // ㅏ
   'e',  // ㅐ (ae)
@@ -29,7 +29,7 @@ const VOWEL = [
   'i',  // ㅣ
 ];
 
-// initial consonant index (0..18) → { base, voiced? }
+// initial consonant index (0..18) -> { base, voiced? }
 // voiced is used when the syllable is word-medial and follows a vowel or a sonorant coda.
 const INIT = [
   { base: 'k', voiced: 'g' }, // ㄱ
@@ -77,7 +77,7 @@ const SILENT = {
   wa: 'ワ', wo: 'ウォ', we: 'ウェ', wi: 'ウィ',
 };
 
-// final consonant index (0..27) → coda kana
+// final consonant index (0..27) -> coda kana
 const FINAL = [
   '',   // 0 none
   'ク', // ㄱ
